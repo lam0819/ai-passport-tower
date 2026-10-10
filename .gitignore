@@ -1,0 +1,36 @@
+# Build
+build/
+sdkconfig
+sdkconfig.old
+sdkconfig.ci
+!sdkconfig.defaults
+managed_components/
+dependencies.lock
+
+# Secrets / signing (copy from ai-passport-muse; never commit)
+*.pem
+.key_is_throwaway
+*.key
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Python / node scratch
+__pycache__/
+*.pyc
+node_modules/
+.venv/
+
+# Transfer / local only
+*.tgz
+*.tar.gz
+xfer_*.tgz
+
+# Host / prototype scratch
+tools/host/host_test
+tools/host/*.o
+prototype/index.html.bak

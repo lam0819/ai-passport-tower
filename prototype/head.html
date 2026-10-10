@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>摩天大廈 SKYRISE — AI Passport prototype</title>
+<style>
+body{background:#111;color:#ccc;font:13px sans-serif;margin:0;display:flex;flex-direction:column;align-items:center}
+canvas{width:640px;height:480px;image-rendering:pixelated;border:2px solid #333;margin-top:12px;max-width:100vw;height:auto}
+.keys{margin:10px;display:flex;gap:10px}.keys button{font-size:18px;width:90px;height:44px;border-radius:8px;border:0;background:#333;color:#fff}
+p{max-width:640px;text-align:center}#out{white-space:pre;font:12px monospace;text-align:left}
+</style></head><body>
+<canvas id="c" width="320" height="240"></canvas>
+<div class="keys"><button data-k="up">▲ UP</button><button data-k="ok">OK</button><button data-k="down">▼ DOWN</button></div>
+<p>Keys: ↑/W, ↓/S, Enter/Space. Tap OK = select or open the menu. Hold OK = back (in the tower view: pause/run).
+In build mode ▲/▼ slide the room left/right. A lift needs a second OK after you pick its top floor.</p>
+<div id="out"></div>
+<script>
