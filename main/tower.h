@@ -112,6 +112,7 @@ void tw_new(uint32_t seed);
 const char *tw_can_place(int t, int f, int x, int top);
 const char *tw_place(int t, int f, int x, int top, int v);   // v: shop variant or -1
 const char *tw_demolish(int uid);
+const char *tw_demolish_shaft(int si);
 const char *tw_add_car(int si);
 const char *tw_finish_now(int uid, int si);  // uid or si (-1 for none)
 const char *tw_buy_speed(int i);

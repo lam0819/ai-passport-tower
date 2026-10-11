@@ -142,6 +142,9 @@ function unitMenu(it) {
     const fin = s.build ? [{ label: 'FINISH NOW', sub: '$' + kfmt(Math.round(T[s.t].cost * C.RUSH_PCT / 100 * s.build / s.build0)), fn: () => { const w = finishNow(s); note(w || 'FINISHED'); sfx(w ? 'bad' : 'build'); closeMenu('inspect'); } }] : [];
     openMenu(T[s.t].en + ' ' + floorName(s.f0) + '-' + floorName(s.f1) + ' CARS ' + s.cars.length + '/' + C.MAX_CARS, [...fin,
       { label: 'ADD CAR', sub: '$' + kfmt(T[s.t].car), fn: () => { const w = addCar(it.s); note(w || 'CAR ADDED'); sfx(w ? 'bad' : 'build'); closeMenu('inspect'); } },
+      { label: 'DEMOLISH', sub: '$' + kfmt(Math.floor((T[s.t].cost + 2000 * (s.f1 - s.f0)) / 10)), fn: () => openMenu('DEMOLISH ' + T[s.t].en + '?', [
+        { label: 'NO', fn: () => closeMenu('inspect') },
+        { label: 'YES, DEMOLISH', fn: () => { const w = demolishShaft(it.s); note(w || 'DEMOLISHED'); sfx(w ? 'bad' : 'ok'); S.insp.list = floorThings(S.cur); S.insp.i = 0; closeMenu(S.insp.list.length ? 'inspect' : 'play'); } }]) },
       { label: 'BACK', fn: () => closeMenu('inspect') }]);
     return;
   }

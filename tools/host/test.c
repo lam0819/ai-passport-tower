@@ -253,6 +253,38 @@ int main(int argc, char **argv)
         CHECK(walkers > 10, "people walk in/out at stops (%d frames)", walkers);
     }
 
+    /* ---- demolish a lift shaft (was impossible: lifts could only get cars, never removed) */
+    {
+        fresh(3000000, false);
+        for (int x = 0; x < 64; x += 8) P(T_LOBBY, G, x, -1);
+        P(T_LIFT, G, 26, F(10));
+        for (int f = 1; f <= 10; f++) for (int x = 0; x < 64; x += 8) P(T_FLOOR, F(f), x, -1);
+        P(T_OFFICE, F(8), 0, -1); P(T_OFFICE, F(8), 12, -1); P(T_FLAT, F(8), 32, -1); P(T_FLAT, F(8), 48, -1); fillF(F(8));
+        next_day();                                   // offices/flats get rented overnight
+        CHECK(count(T_OFFICE, true) > 0, "offices rent before the demolition test");
+        S->tick = 7 * T_HOUR;
+        long guard = 0; while (!people_in_groups() && guard++ < T_HOUR / 2) tw_tick();   // wait for a real mid-commute
+        long pg0 = people_in_groups();
+        CHECK(pg0 > 0, "the rush puts people in transit before demolishing (%ld)", pg0);
+        int64_t fa0 = S->st.failed, f0 = S->funds; int n_sh = S->n_shafts;
+        const char *w = tw_demolish_shaft(0);
+        CHECK(w == NULL, "demolishing the only lift works (%s)", w ? w : "ok");
+        CHECK(S->n_shafts == n_sh - 1, "the shaft is gone from the pool (%d left)", S->n_shafts);
+        CHECK(f0 - S->funds == (g_T[T_LIFT].cost + 2000 * 10) / 10, "demolish costs 10%% of the lift ($%lld)", (long long)(f0 - S->funds));
+        CHECK(people_in_groups() == 0, "every rider/waiter is released from the dead lift (%ld people left)", people_in_groups());
+        CHECK(S->st.failed - fa0 == pg0, "all %ld in-flight people count as failed trips (%lld)", pg0, (long long)(S->st.failed - fa0));
+        CHECK(S->st.spawned == S->st.arrived + S->st.failed + people_in_groups(), "people conserved through a demolition (spawned %lld)", (long long)S->st.spawned);
+        int bad = 0;
+        for (int i = 0; i < MAX_GROUPS; i++) if (S->g[i].st) for (int k = 0; k < S->g[i].nlegs; k++) if (S->g[i].ls[k] >= S->n_shafts) bad++;
+        CHECK(bad == 0, "no running group references a dead shaft (%d stale legs)", bad);
+        CHECK(!S->access[F(8)], "with the lift gone 8/F is unreachable again");
+        int fc = 0;
+        for (int i = 0; i < S->n_units; i++) if (S->u[i].t == T_FLOOR && S->u[i].f == F(8) && S->u[i].x == 26) fc = 1;
+        CHECK(fc, "the lift column becomes empty floor again");
+        CHECK(tryP(T_LIFT, G, 26, F(10)), "a new lift builds over the old column");
+        CHECK(S->n_shafts == 1 && S->access[F(8)], "the rebuilt lift serves the floor again");
+    }
+
     /* ---- stairs */
     fresh(3000000, false);
     for (int x = 0; x < 64; x += 8) P(T_LOBBY, G, x, -1);

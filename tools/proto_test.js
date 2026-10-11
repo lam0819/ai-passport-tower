@@ -110,6 +110,31 @@
     H.computeAccess();
     ok(S.access[F(4)] === 1 && S.access[F(5)] === 0, 'stairs carry people up to 4 floors only');
 
+    // ---- demolish a lift shaft (lifts had no delete; rooms/housekeeping/security as before)
+    fresh(3000000);
+    for (let x = 0; x < 64; x += 8) P('lobby', G, x);
+    for (let f = 1; f <= 10; f++) for (let x = 0; x < 64; x += 8) P('floor', F(f), x);
+    P('lift', G, 26, F(10));
+    P('office', F(8), 0); P('office', F(8), 12); P('flat', F(8), 32); P('flat', F(8), 48);
+    days(1);                       // offices get rented overnight
+    S.tick = 7 * C.HOUR;
+    let guard = 0; while (S.groups.length === 0 && guard++ < C.HOUR / 2) H.simTick();   // wait for a real mid-commute
+    const pg0 = S.groups.reduce((a, g) => a + g.n, 0);
+    ok(pg0 > 0, 'the rush puts people in transit before demolishing (' + pg0 + ')');
+    const fa0 = S.stats.failed, fd0 = S.funds, sh0 = S.shafts.length;
+    const w = H.demolishShaft(0);
+    ok(w === null, 'demolishing the only lift works' + (w ? ' (' + w + ')' : ''));
+    ok(S.shafts.length === sh0 - 1, 'the shaft is gone from S.shafts (' + sh0 + ' -> ' + S.shafts.length + ')');
+    ok(S.funds === fd0 - Math.floor((H.T.lift.cost + 2000 * 10) / 10), 'demolish costs 10% of the lift ($' + (fd0 - S.funds) + ')');
+    const pg1 = S.groups.reduce((a, g) => a + g.n, 0);
+    ok(pg1 === 0 && S.stats.failed - fa0 === pg0, 'all ' + pg0 + ' in-flight people are released as failed trips (left: ' + pg1 + ')');
+    ok(S.stats.spawned === S.stats.arrived + S.stats.failed + pg1, 'people conserved through a demolition (spawned ' + S.stats.spawned + ')');
+    ok(S.access[F(8)] === 0, '8/F unreachable again without the lift');
+    ok(S.units.some((u) => u.t === 'floor' && u.f === F(8) && u.x === 26), 'the lift column becomes empty floor again');
+    ok(H.canPlace('lift', G, 26, F(10)) === null, 'a new lift builds over the old column');
+    H.place('lift', G, 26, F(10));
+    ok(S.access[F(8)] === 1, 'the rebuilt lift serves the floor again');
+
     // ---- stress: one car vs a crowd -> low evaluation, people leave
     fresh(9000000);
     for (let x = 0; x < 64; x += 8) P('lobby', G, x);

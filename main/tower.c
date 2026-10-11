@@ -479,6 +479,98 @@ const char *tw_demolish(int id)
     tw_compute_access();
     return NULL;
 }
+/* ------------------------------------------------------------ demolishing a lift shaft */
+static void fail_trip(int uid, int n);
+static void free_group(int gi);
+static void q_unlink(shaft_t *s, int q, int gi)   // take a waiter out of a shaft's FIFO
+{
+    uint16_t prev = NO_ID;
+    for (uint16_t i = s->qh[q]; i != NO_ID; i = S->g[i].next) {
+        if (i == gi) {
+            if (prev == NO_ID) s->qh[q] = S->g[i].next; else S->g[prev].next = S->g[i].next;
+            if (s->qt[q] == gi) s->qt[q] = prev;
+            S->g[gi].next = NO_ID;
+            return;
+        }
+        prev = i;
+    }
+}
+static void c_unlink(shaft_t *s, int gi)          // take a rider out of any car of the shaft
+{
+    for (int k = 0; k < s->ncars; k++) {
+        car_t *c = &s->car[k];
+        uint16_t *pp = &c->head;
+        while (*pp != NO_ID) {
+            if (*pp == gi) {
+                *pp = S->g[gi].next;
+                c->load -= S->g[gi].n;
+                S->g[gi].next = NO_ID;
+                return;
+            }
+            pp = &S->g[*pp].next;
+        }
+    }
+}
+const char *tw_demolish_shaft(int si)
+{
+    if (si < 0 || si >= S->n_shafts) return "NO LIFT";
+    const tdef_t *d = &g_T[S->s[si].t];
+    int32_t c = (d->cost + 2000 * (S->s[si].f1 - S->s[si].f0)) / 10;
+    uint8_t f0 = S->s[si].f0, f1 = S->s[si].f1, x0 = S->s[si].x, w = S->s[si].w;
+    /* everyone whose trip still needs this shaft gives up: it counts as a failed trip */
+    for (int gi = 0; gi < MAX_GROUPS; gi++) {
+        group_t *g = &S->g[gi];
+        if (g->st == ST_FREE) continue;
+        bool dead = false;
+        for (int k = g->leg; k < g->nlegs && !dead; k++) dead = (g->ls[k] == si);
+        if (!dead) continue;
+        if (g->st == ST_Q) q_unlink(&S->s[g->ls[g->leg]], qi(&S->s[g->ls[g->leg]], g->lf[g->leg]), gi);
+        else if (g->st == ST_RIDE) c_unlink(&S->s[g->ls[g->leg]], gi);
+        /* the trip is cancelled: mirror spawn's no-route failure (satisfies
+         * spawned == arrived + failed + in_tower), plus undo the ride's transit
+         * and put the people back inside their unit */
+        S->st.failed += g->n;
+        fail_trip(g->u, g->n);
+        if (g->u != NO_ID && S->u[g->u].t != T_NONE) {
+            unit_t *ug = &S->u[g->u];
+            if (g->kind == K_IN || g->kind == K_BACK || g->kind == K_GUEST) {
+                ug->transit = (uint8_t)(ug->transit > g->n ? ug->transit - g->n : 0);
+                ug->inside += (uint8_t)g->n;
+            }
+        }
+        free_group(gi);
+    }
+    /* drop the shaft from the pool */
+    memmove(&S->s[si], &S->s[si + 1], (size_t)(S->n_shafts - si - 1) * sizeof(shaft_t));
+    S->n_shafts--;
+    /* remap every route that pointed past the removed shaft */
+    for (int gi = 0; gi < MAX_GROUPS; gi++) {
+        group_t *g = &S->g[gi];
+        if (g->st == ST_FREE) continue;
+        for (int k = 0; k < g->nlegs; k++) if (g->ls[k] > si) g->ls[k]--;
+    }
+    if (S->broken_si != 0xff) {
+        if (S->broken_si == si) S->broken_si = 0xff;
+        else if (S->broken_si > si) S->broken_si--;
+    }
+    /* the column turns back into empty floor */
+    for (int ff = f0; ff <= f1; ff++) {
+        int x = x0, x1 = x0 + w;
+        while (x < x1) {
+            int xb = x;
+            while (x < x1 && tw_cell(ff, x) == 0) x++;
+            if (x > xb) {
+                int id = alloc_unit();
+                if (id < 0) break;               // room pool full: leave the cells as supported voids
+                add_unit(T_FLOOR, ff, xb, x - xb);
+            }
+            for (; x < x1 && tw_cell(ff, x) != 0; x++);   // skip anything unexpected left over
+        }
+    }
+    spend(c);
+    tw_compute_access();
+    return NULL;
+}
 const char *tw_add_car(int si)
 {
     shaft_t *s = &S->s[si];

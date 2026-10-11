@@ -374,6 +374,54 @@ function demolish(u) {
   spend(Math.floor(T[u.t].cost / 10));
   return null;
 }
+function demolishShaft(si) {
+  const s = S.shafts[si];
+  if (!s) return 'NO LIFT';
+  const fee = Math.floor((T[s.t].cost + 2000 * (s.f1 - s.f0)) / 10);
+  // everyone whose trip still needs this shaft gives up (counts as a failed trip)
+  for (const g of [...S.groups]) {
+    if (!g.legs || !g.legs.length) continue;
+    let dead = false;
+    for (let k = g.leg; k < g.legs.length; k++) if (g.legs[k].s === si) { dead = true; break; }
+    if (!dead) continue;
+    if (g.st === 'q') {
+      const L = g.legs[g.leg], q = S.shafts[L.s].q[L.from], i = q.indexOf(g);
+      if (i >= 0) q.splice(i, 1);
+    } else if (g.st === 'ride') {
+      const L = g.legs[g.leg], sh = S.shafts[L.s];
+      for (const c of sh.cars) {
+        const i = c.g.indexOf(g);
+        if (i >= 0) { c.g.splice(i, 1); c.load -= g.n; }
+      }
+    }
+    S.stats.failed += g.n;
+    failTrip(g.u, g.n, g.kind);
+    const un = g.u >= 0 ? unitById(g.u) : null;
+    if (un && (g.kind === 'in' || g.kind === 'back' || g.kind === 'guest')) {
+      un.transit = Math.max(0, un.transit - g.n);   // undo the ride's transit
+      un.inside += g.n;                             // the people give up and stay in their unit
+    }
+    g.st = 'done';
+  }
+  S.groups = S.groups.filter((g) => g.st !== 'done');
+  // the column turns back into empty floor (the slab stays, so floors above keep standing)
+  for (let ff = s.f0; ff <= s.f1; ff++)
+    for (let xx = s.x; xx < s.x + s.w; xx++) if (S.grid[ff * C.W + xx] === -(si + 1)) S.grid[ff * C.W + xx] = 0;
+  for (let ff = s.f0; ff <= s.f1; ff++) {
+    for (let xx = s.x; xx < s.x + s.w; xx++) {
+      if (S.grid[ff * C.W + xx] !== 0) continue;
+      const x0 = xx;
+      while (xx < s.x + s.w && S.grid[ff * C.W + xx] === 0) xx++;
+      addPiece('floor', ff, x0, xx - x0);
+    }
+  }
+  S.shafts.splice(si, 1);
+  for (const g of S.groups) if (g.legs) for (const L of g.legs) if (L.s > si) L.s--;
+  if (S.brokenSi > si) S.brokenSi--; else if (S.brokenSi === si) S.brokenSi = -1;
+  spend(fee);
+  computeAccess();
+  return null;
+}
 function addCar(si, free) {
   const s = S.shafts[si];
   if (s.cars.length >= C.MAX_CARS) return 'MAX ' + C.MAX_CARS + ' CARS';
@@ -1069,6 +1117,9 @@ function unitMenu(it) {
     const fin = s.build ? [{ label: 'FINISH NOW', sub: '$' + kfmt(Math.round(T[s.t].cost * C.RUSH_PCT / 100 * s.build / s.build0)), fn: () => { const w = finishNow(s); note(w || 'FINISHED'); sfx(w ? 'bad' : 'build'); closeMenu('inspect'); } }] : [];
     openMenu(T[s.t].en + ' ' + floorName(s.f0) + '-' + floorName(s.f1) + ' CARS ' + s.cars.length + '/' + C.MAX_CARS, [...fin,
       { label: 'ADD CAR', sub: '$' + kfmt(T[s.t].car), fn: () => { const w = addCar(it.s); note(w || 'CAR ADDED'); sfx(w ? 'bad' : 'build'); closeMenu('inspect'); } },
+      { label: 'DEMOLISH', sub: '$' + kfmt(Math.floor((T[s.t].cost + 2000 * (s.f1 - s.f0)) / 10)), fn: () => openMenu('DEMOLISH ' + T[s.t].en + '?', [
+        { label: 'NO', fn: () => closeMenu('inspect') },
+        { label: 'YES, DEMOLISH', fn: () => { const w = demolishShaft(it.s); note(w || 'DEMOLISHED'); sfx(w ? 'bad' : 'ok'); S.insp.list = floorThings(S.cur); S.insp.i = 0; closeMenu(S.insp.list.length ? 'inspect' : 'play'); } }]) },
       { label: 'BACK', fn: () => closeMenu('inspect') }]);
     return;
   }
@@ -1856,7 +1907,7 @@ for (const b of document.querySelectorAll('[data-k]')) {
 freshState(); seed(Date.now());
 requestAnimationFrame(loop);
 
-window.__TW = { dig, digCost, digHours, depth, deepUncovered, ventOK, saveSlot, loadSlot, slotInfo, repairPower, repairLift, shaftLive, titleMenu, C, S, T, SHOPS, wantMusic, musicTick, BUILD_ORDER, place, canPlace, demolish, addCar, route, simTick, frame, render, setKey, save, load, seed, freshState, newGame,
+window.__TW = { dig, digCost, digHours, depth, deepUncovered, ventOK, saveSlot, loadSlot, slotInfo, repairPower, repairLift, shaftLive, titleMenu, C, S, T, SHOPS, wantMusic, musicTick, BUILD_ORDER, place, canPlace, demolish, demolishShaft, addCar, route, simTick, frame, render, setKey, save, load, seed, freshState, newGame,
   isRefugeFloor, uncoveredFloor, newDay, population, finishNow, buySpeed, animate, checkStars, starReqs, computeAccess, unitById, floorThings, stop: () => { running = false; }, K };
 </script>
 </body></html>

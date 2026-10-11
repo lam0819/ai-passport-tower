@@ -10,7 +10,7 @@ ui_t g_ui;
 #define S (&g_tw)
 
 enum { A_NONE, A_AGAIN, A_BUILDMENU, A_INSPECT, A_SPEED, A_SHOP, A_RUSH, A_STATUS, A_NEWS, A_GO_G, A_GO_TOP, A_SAVE_TITLE,
-       A_PICK, A_BUY, A_BACK, A_CAR, A_FINISH, A_RENT, A_DEMOLISH, A_DEMO_YES, A_CLOSE, A_SOUND, A_DIG, A_SAVE1, A_SAVE2, A_LOAD1, A_LOAD2, A_NEW, A_TITLE, A_REPAIR_PWR, A_REPAIR_LIFT };
+       A_PICK, A_BUY, A_BACK, A_CAR, A_FINISH, A_RENT, A_DEMOLISH, A_DEMO_YES, A_DEMO_SHAFT, A_DEMO_SHAFT_YES, A_CLOSE, A_SOUND, A_DIG, A_SAVE1, A_SAVE2, A_LOAD1, A_LOAD2, A_NEW, A_TITLE, A_REPAIR_PWR, A_REPAIR_LIFT };
 static const char *const SHOP_EN[6] = {"CONVENIENCE", "PHARMACY", "GOLDSMITH", "BAKERY", "ELECTRONICS", "FASHION"};
 static const int TPF[4] = {0, 4, 8, 16};
 
@@ -190,6 +190,8 @@ static void unit_menu(void)
         if (s->build) { kfmt(c + 1, 9, tw_finish_price(-1, si)); c[0] = '$'; add("FINISH NOW", c, A_FINISH, -1, si, false); }
         kfmt(c + 1, 9, g_T[s->t].car); c[0] = '$';
         add("ADD CAR", c, A_CAR, si, 0, false);
+        kfmt(c + 1, 9, (g_T[s->t].cost + 2000 * (s->f1 - s->f0)) / 10); c[0] = '$';
+        add("DEMOLISH", c, A_DEMO_SHAFT, si, 0, false);
         add("BACK", NULL, A_CLOSE, 0, 0, false);
         return;
     }
@@ -245,6 +247,8 @@ static void do_item(const item_t *it)
     case A_RENT: { unit_t *u = &S->u[it->arg]; u->rent = (uint8_t)((u->rent + 1) % 3); unit_menu(); U->menu.sel = (uint8_t)(it - U->menu.it); break; }
     case A_DEMOLISH: { int id = it->arg; open_menu("DEMOLISH?", M_INSPECT); add("NO", NULL, A_CLOSE, 0, 0, false); add("YES, DEMOLISH", NULL, A_DEMO_YES, id, 0, false); break; }
     case A_DEMO_YES: result(tw_demolish(it->arg), "DEMOLISHED", 0); fill_insp(); U->mode = U->insp.n ? M_INSPECT : M_PLAY; U->save_in = 900; break;
+    case A_DEMO_SHAFT: { int si = it->arg; open_menu("DEMOLISH?", M_INSPECT); add("NO", NULL, A_CLOSE, 0, 0, false); add("YES, DEMOLISH", NULL, A_DEMO_SHAFT_YES, si, 0, false); break; }
+    case A_DEMO_SHAFT_YES: result(tw_demolish_shaft(it->arg), "DEMOLISHED", 0); fill_insp(); U->mode = U->insp.n ? M_INSPECT : M_PLAY; U->save_in = 900; break;
     }
 }
 void ui_act(int k)

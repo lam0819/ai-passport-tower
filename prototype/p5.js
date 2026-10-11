@@ -712,5 +712,5 @@ for (const b of document.querySelectorAll('[data-k]')) {
 freshState(); seed(Date.now());
 requestAnimationFrame(loop);
 
-window.__TW = { dig, digCost, digHours, depth, deepUncovered, ventOK, saveSlot, loadSlot, slotInfo, repairPower, repairLift, shaftLive, titleMenu, C, S, T, SHOPS, wantMusic, musicTick, BUILD_ORDER, place, canPlace, demolish, addCar, route, simTick, frame, render, setKey, save, load, seed, freshState, newGame,
+window.__TW = { dig, digCost, digHours, depth, deepUncovered, ventOK, saveSlot, loadSlot, slotInfo, repairPower, repairLift, shaftLive, titleMenu, C, S, T, SHOPS, wantMusic, musicTick, BUILD_ORDER, place, canPlace, demolish, demolishShaft, addCar, route, simTick, frame, render, setKey, save, load, seed, freshState, newGame,
   isRefugeFloor, uncoveredFloor, newDay, population, finishNow, buySpeed, animate, checkStars, starReqs, computeAccess, unitById, floorThings, stop: () => { running = false; }, K };

@@ -81,7 +81,7 @@ Status screen shows a checklist of the next star (`[x] POP 600`, `[ ] SECURITY`)
 - **No per-person simulation.** Each room has counters (`inside`, `transit`) and decides once per game minute whether a **group** of 1–6 people sets off (office: arrive 7:30–9:00, lunch 12:00 to the nearest open food place, leave 17:00–18:30; flats: out in the morning, back in the evening, weekend shopping; hotel: check in 17–21, check out 7–10; shops and cinema: walk-ins from G or the metro).
 - Group pool **512**, delayed-return pool **256**. When the pool is full, the trip "overflows": the people arrive instantly with no stress, so the game never blocks. Tests show peak 147 groups in a deliberately overloaded tower.
 - **Routes 路線:** same floor → walk; ≤4 floors with stairs → walk; a lift serving both floors (the shortest queue wins); otherwise **one transfer at a lobby floor** (G/15/30/…/90); or 1–2 flights of stairs to reach a lift. No route → the trip fails and counts as an hour of waiting (the room's evaluation crashes, which is the "no access" feedback).
-- **Lifts 升降機:** collective control (finish the current direction, serve calls on the way, reverse when nothing is ahead). Capacity 15/25, doors 2 ticks, express moves 3 floors/tick. Each floor of each shaft has a FIFO queue of groups; groups waiting get +1 wait per tick.
+- **Lifts 升降機:** collective control (finish the current direction, serve calls on the way, reverse when nothing is ahead). Capacity 15/25, doors 2 ticks, express moves 3 floors/tick. Each floor of each shaft has a FIFO queue of groups; groups waiting get +1 wait per tick. A shaft can be **demolished** (inspect it → `DEMOLISH`): every rider/waiter is released (their trip counts as failed), the whole column turns back into empty floor, and it costs 10% of the shaft like rooms.
 - **Stress → evaluation 壓力 → 評價:** each room keeps total waited time; daily `eval = ½·old + ½·(78 − min(70, avgWaitMin×10) + rent adj (+10 / 0 / −15) − noise 15 − no-housekeeping 25 − no-clinic 10)`. Weekends keep the last weekday's wait. Shown as an orange/red dot on the room, plus queue figures next to lifts (black → pink → red, like the original).
 - Offices with eval < 35 leave at the quarter; flats < 25 go back on sale; shops with < 8 customers for 4 days close.
 
@@ -118,7 +118,9 @@ Keys: **UP / OK / DOWN** on one ADC ladder, so only one key counts at a time (no
 | Menu (list) | prev | next | choose | back |
 | Build: place room | slide ◀ | slide ▶ | **build here** (stays in build mode, jumps to the next free spot) | done |
 | Build: lift, step 2 | top floor up | top floor down | build lift | back to step 1 |
-| Inspect floor | prev room | next room | room menu (FINISH NOW, rent L/N/H, add car, demolish) | back |
+| Inspect floor | prev room | next room | room menu (FINISH NOW, rent L/N/H, DEMOLISH) | back |
+
+Inspecting a **lift / express shaft** (not a room) opens the shaft menu: `FINISH NOW` (if scaffolding), `ADD CAR` (if affordable / < 4 cars), `DEMOLISH` → `YES, DEMOLISH`. Housekeeping and security are permanent and refuse with `CANNOT REMOVE`.
 | Status / News | — | — | close | close |
 
 Main menu: `BUILD AGAIN: <last>` (one OK to continue building), `BUILD...`, `INSPECT n/F`, `SPEED` (cycles owned clocks), `SPEED SHOP...`, `RUSH BUILD: ON/OFF`, `TOWER STATUS` (star checklist + money), `NEWS`, `GO TO G/F`, `GO TO TOP`, `SAVE & TITLE`.
